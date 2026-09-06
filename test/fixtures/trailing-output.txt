@@ -1,0 +1,5 @@
+<br />
+<font size='1'><table class='xdebug-error'><tr><td>{main}( )</td></tr></table></font>
+{"update":"77160"}
+<br />
+<b>Notice</b>: session_write_close() in /var/www/dzo/index.php on line 9
