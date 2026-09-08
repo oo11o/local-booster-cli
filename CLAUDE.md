@@ -44,7 +44,7 @@ when unset; `baseUrl` falls back to the `http://dzo.lh` dev placeholder.
 `localConfig.js` reads the first existing, non-empty `conf.json` from:
 `$DZO_CONFIG` → `./conf.json` (cwd) → the file next to `package.json` →
 `~/.dzo.json`. Result is cached per process (`resetLocalConfigCache()` for
-tests). Malformed JSON throws with the path. This file is git-ignored;
+tests). Malformed JSON throws with the path. This file is git-ignored.
 
 ### The `sync` module
 
