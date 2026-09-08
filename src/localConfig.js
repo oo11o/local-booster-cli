@@ -8,8 +8,8 @@ import { join } from 'node:path';
 //
 // Looked up, first hit wins:
 //   1. $DZO_CONFIG                       (explicit path)
-//   2. ./dzo.local.json                  (cwd)
-//   3. dzo.local.json next to package.json
+//   2. ./conf.json                       (cwd)
+//   3. conf.json next to package.json
 //   4. ~/.dzo.json                       (per-user)
 //
 // Shape:
@@ -19,7 +19,7 @@ import { join } from 'node:path';
 //     "syncPath": "/…/….php",
 //     "queryParams": { "hash": "…", "cdb": "…", "run": "…", "type": "…" }
 //   }
-const FILE_NAME = 'dzo.local.json';
+const FILE_NAME = 'conf.json';
 
 function candidatePaths() {
   const paths = [];

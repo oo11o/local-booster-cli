@@ -21,7 +21,7 @@ export const SINHRO_TABLES = [
 const USAGE = 'dzo sync [type] <hash>';
 
 // `names` maps the logical field to the real query-parameter name, and comes
-// from dzo.local.json ("queryParams") — no endpoint naming lives in source.
+// from conf.json ("queryParams") — no endpoint naming lives in source.
 function buildUrl(base, { path, names, hash, type, cdb, run }) {
   const u = new URL(`${base}${path}`);
   u.searchParams.set(names.hash, hash);
@@ -49,8 +49,8 @@ Known types: ${SINHRO_TABLES.join(', ')}
 
 Module flags:
   --cdb=<n>   CDB_Number query value (default: 0)
-  --run=<k>   run= key override (default: dzo.local.json "run", env: DZO_RUN)
-  --sync-path=<p>  endpoint path override (default: dzo.local.json "syncPath",
+  --run=<k>   run= key override (default: conf.json "run", env: DZO_RUN)
+  --sync-path=<p>  endpoint path override (default: conf.json "syncPath",
                    env: DZO_SYNC_PATH)
   --raw       Print the untouched response body and exit
   --url       Print the request URL without calling it

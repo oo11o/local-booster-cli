@@ -9,7 +9,7 @@ const GLOBAL_FLAGS_TEXT = `Options:
   -v, --version      Print version
   -h, --help         Show help
 
-Local settings file (git-ignored): dzo.local.json in the project root or
+Local settings file (git-ignored): conf.json in the project root or
 ~/.dzo.json, or a path in $DZO_CONFIG. Keys: "run", "baseUrl". Flags and
 env vars still win over it.`;
 
