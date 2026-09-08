@@ -10,19 +10,19 @@ export function resolveRun(flag) {
   const run = flag ?? process.env.DZO_RUN ?? loadLocalConfig().run;
   if (run == null || run === '') {
     throw new Error(
-      'no run key — set "run" in dzo.local.json, or pass --run / DZO_RUN',
+      'no run key — set "run" in conf.json, or pass --run / DZO_RUN',
     );
   }
   return String(run);
 }
 
 // Endpoint path for the sync request (e.g. "/cron/directSinhro.php"). Kept
-// out of the source — set it in dzo.local.json.
+// out of the source — set it in conf.json.
 export function resolveSyncPath(flag) {
   const raw = flag ?? process.env.DZO_SYNC_PATH ?? loadLocalConfig().syncPath;
   if (raw == null || raw === '') {
     throw new Error(
-      'no sync path — set "syncPath" in dzo.local.json, or pass --sync-path / DZO_SYNC_PATH',
+      'no sync path — set "syncPath" in conf.json, or pass --sync-path / DZO_SYNC_PATH',
     );
   }
   const path = String(raw).trim();
@@ -30,13 +30,13 @@ export function resolveSyncPath(flag) {
 }
 
 // Query-parameter names for the sync request, kept out of the source.
-// dzo.local.json "queryParams" must supply all four keys: hash, cdb, run, type.
+// conf.json "queryParams" must supply all four keys: hash, cdb, run, type.
 const QUERY_PARAM_KEYS = ['hash', 'cdb', 'run', 'type'];
 
 export function resolveQueryParams() {
   const names = loadLocalConfig().queryParams;
   if (!names || typeof names !== 'object') {
-    throw new Error('no queryParams — set "queryParams" in dzo.local.json');
+    throw new Error('no queryParams — set "queryParams" in conf.json');
   }
   const missing = QUERY_PARAM_KEYS.filter((k) => !names[k]);
   if (missing.length > 0) {

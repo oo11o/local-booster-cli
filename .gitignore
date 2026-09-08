@@ -3,4 +3,4 @@ node_modules/
 *.log
 
 # local secrets
-dzo.local.json
+conf.json

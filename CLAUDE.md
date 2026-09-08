@@ -41,11 +41,10 @@ file's `queryParams` object (keys `hash`, `cdb`, `run`, `type` → real param
 names). `run`, `syncPath`, and `queryParams` throw a usage error (exit 64)
 when unset; `baseUrl` falls back to the `http://dzo.lh` dev placeholder.
 
-`localConfig.js` reads the first existing, non-empty `dzo.local.json` from:
-`$DZO_CONFIG` → `./dzo.local.json` (cwd) → the file next to `package.json` →
+`localConfig.js` reads the first existing, non-empty `conf.json` from:
+`$DZO_CONFIG` → `./conf.json` (cwd) → the file next to `package.json` →
 `~/.dzo.json`. Result is cached per process (`resetLocalConfigCache()` for
-tests). Malformed JSON throws with the path. This file is git-ignored;
-`dzo.local.json.example` is the committed template.
+tests). Malformed JSON throws with the path. This file is git-ignored.
 
 ### The `sync` module
 
