@@ -62,6 +62,46 @@ HTML — it isolates the tail after the last `</table>`/`</font>`, then:
 Exit codes: `0` ok, `1` server `false`, `2` unrecognized payload, `3` network/
 HTTP failure, `64` usage error. Regression fixtures live in `test/fixtures/`.
 
+### The `sql` module
+
+Runs templated SQL against the stage DB over SSH. The transport and SQL
+concerns are deliberately split into two libs so the transport is reusable
+by any future module:
+
+- `src/ssh.js` — generic "run a command on a host" transport. `buildSshArgs`
+  is a pure argv builder; `runSsh` spawns `ssh` via `node:child_process`
+  `spawn` with an **argv array and no `shell: true`**, so the local shell
+  never re-interprets anything. It knows nothing about SQL/mysql.
+- `src/sql.js` — templating and the mysql/docker command. `escapeSqlLiteral`
+  quotes every value (numbers included); `renderTemplate` substitutes
+  `{{name}}` placeholders and **throws** on both a missing param and an
+  unused one (typo guards). `buildMysqlCommand` builds the remote
+  `docker exec ... mysql ...` string; `runQuery`/`runTemplate` are the reuse
+  entry points other modules should call.
+
+The remote SQL text always travels on the child process's **stdin**, never
+inside the command string — this is what makes single-quote injection in a
+param harmless (it becomes part of one already-escaped literal, never new
+shell/SQL syntax). `sudo` on the stage host is assumed passwordless, so
+there's no TTY (`ssh -t`) and no `docker exec -it`. The DB password rides as
+`MYSQL_PWD=<value>`, prefixed into the *remote* command string (not the
+local ssh process's env — `docker exec -e MYSQL_PWD` only forwards a var
+already present in the remote shell that invokes it) and forwarded into the
+container with `docker exec -e MYSQL_PWD`; `sudo -E` preserves it across the
+`sudo` hop. This avoids mysql's "insecure password" warning that `-p<pass>`
+prints to stderr.
+
+`resolveSsh`, `resolveDb`, and `resolveSqlTemplate` (in `src/config.js`)
+follow the same flag → env → conf.json precedence and throw-with-a-fix-hint
+style as the `sync` module's resolvers. `conf.json` gains `ssh` (`host`,
+`options`), `db` (`container`, `sudo`, `host`, `port`, `user`, `password`,
+`database`), and `sqlTemplates` (name → SQL with `{{name}}` placeholders).
+
+Exit codes: `0` ok, `1` zero rows with `--require-rows`, `3` ssh/mysql
+failure, `64` usage error (bad `name=value`, unknown template, missing
+config). `--print` resolves and prints the ssh argv (password redacted) and
+SQL without connecting — the `sql` module's equivalent of `sync --url`.
+
 ### Output convention (`src/output.js`)
 
 `ok()` writes the result line to **stdout** (the only thing on stdout).

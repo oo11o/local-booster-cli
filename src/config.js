@@ -51,6 +51,54 @@ export function resolveBaseUrl(flag) {
   return String(raw).replace(/\/+$/, '');
 }
 
+// SSH host/options for the `sql` module. `host` follows the usual
+// precedence; `options` (extra ssh flags, e.g. ["-o", "BatchMode=yes"])
+// comes from conf.json only — there's no sane flag/env shape for an array.
+export function resolveSsh(flag) {
+  const local = loadLocalConfig().ssh || {};
+  const host = flag ?? process.env.DZO_SSH_HOST ?? local.host;
+  if (host == null || host === '') {
+    throw new Error(
+      'no ssh host — set "ssh.host" in conf.json, or pass --ssh-host / DZO_SSH_HOST',
+    );
+  }
+  return { host: String(host), options: Array.isArray(local.options) ? local.options : [] };
+}
+
+// DB connection details for the `sql` module, from conf.json "db" with
+// DZO_DB_* env overrides.
+const DB_KEYS = ['container', 'host', 'user', 'password', 'database'];
+
+export function resolveDb() {
+  const local = loadLocalConfig().db || {};
+  const db = {
+    container: process.env.DZO_DB_CONTAINER ?? local.container,
+    sudo: local.sudo ?? true,
+    host: process.env.DZO_DB_HOST ?? local.host,
+    port: process.env.DZO_DB_PORT ?? local.port,
+    user: process.env.DZO_DB_USER ?? local.user,
+    password: process.env.DZO_DB_PASSWORD ?? local.password,
+    database: process.env.DZO_DB_NAME ?? local.database,
+  };
+  const missing = DB_KEYS.filter((k) => db[k] == null || db[k] === '');
+  if (missing.length > 0) {
+    throw new Error(`db config missing key(s): ${missing.join(', ')} — set "db" in conf.json`);
+  }
+  return db;
+}
+
+// A named SQL template from conf.json "sqlTemplates".
+export function resolveSqlTemplate(name) {
+  const templates = loadLocalConfig().sqlTemplates || {};
+  const sql = templates[name];
+  if (sql == null || sql === '') {
+    const known = Object.keys(templates);
+    const hint = known.length > 0 ? `known templates: ${known.join(', ')}` : 'no templates configured';
+    throw new Error(`no sql template named '${name}' — ${hint}`);
+  }
+  return sql;
+}
+
 export function resolveTimeoutMs(flag) {
   const raw = flag ?? process.env.DZO_TIMEOUT ?? DEFAULT_TIMEOUT_SEC;
   const sec = Number(raw);

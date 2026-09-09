@@ -1,11 +1,13 @@
 import { parseArgs } from 'node:util';
 import syncModule from './modules/sync.js';
+import sqlModule from './modules/sql.js';
 import helpModule from './modules/help.js';
 import { fail, setQuiet } from './output.js';
 import { version } from './http.js';
 
 export const MODULES = new Map([
   ['sync', syncModule],
+  ['sql', sqlModule],
   ['help', helpModule],
 ]);
 
