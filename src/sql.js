@@ -16,6 +16,41 @@ export function escapeSqlLiteral(value) {
   return `'${escaped}'`;
 }
 
+// Read-only guard. The `sql` module only ever reads from stage — DELETE,
+// DROP, UPDATE, INSERT and every other write/DDL verb are refused before
+// anything is sent over ssh. Only SELECT / WITH / SHOW / EXPLAIN /
+// DESCRIBE / DESC are allowed, and each `;`-separated statement is checked
+// so `SELECT 1; DROP TABLE x` can't sneak a write past the first keyword.
+const READ_ONLY_VERBS = new Set(['select', 'with', 'show', 'explain', 'describe', 'desc', 'analyze']);
+
+// Strip -- line comments, # line comments, and /* */ block comments so the
+// leading keyword check can't be fooled by `/*x*/DROP`.
+function stripSqlComments(sql) {
+  return String(sql)
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/--[^\n\r]*/g, ' ')
+    .replace(/#[^\n\r]*/g, ' ');
+}
+
+export function assertReadOnly(sql) {
+  const statements = stripSqlComments(sql)
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s !== '');
+  if (statements.length === 0) {
+    throw new Error('empty SQL');
+  }
+  for (const stmt of statements) {
+    const verb = (stmt.match(/^[a-zA-Z]+/) || [''])[0].toLowerCase();
+    if (!READ_ONLY_VERBS.has(verb)) {
+      throw new Error(
+        `refused: only read-only SQL is allowed (SELECT/WITH/SHOW/EXPLAIN/DESCRIBE), got '${verb || stmt.slice(0, 16)}'`,
+      );
+    }
+  }
+  return sql;
+}
+
 const PLACEHOLDER_RE = /\{\{(\w+)\}\}/g;
 
 // Substitute every {{name}} in `sql` with the escaped value of params[name].
@@ -76,6 +111,7 @@ export function buildMysqlCommand({ container, sudo, host, port, user, password,
 // `ps` output.
 export async function runQuery(sql, opts = {}) {
   const { exec = runSsh, sshHost, timeoutMs, batch = false } = opts;
+  assertReadOnly(sql);
   const ssh = resolveSsh(sshHost);
   const db = resolveDb();
 

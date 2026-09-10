@@ -75,9 +75,13 @@ by any future module:
 - `src/sql.js` — templating and the mysql/docker command. `escapeSqlLiteral`
   quotes every value (numbers included); `renderTemplate` substitutes
   `{{name}}` placeholders and **throws** on both a missing param and an
-  unused one (typo guards). `buildMysqlCommand` builds the remote
-  `docker exec ... mysql ...` string; `runQuery`/`runTemplate` are the reuse
-  entry points other modules should call.
+  unused one (typo guards). `assertReadOnly` splits the SQL on `;`, strips
+  comments, and **throws** unless every statement's leading verb is one of
+  `SELECT`/`WITH`/`SHOW`/`EXPLAIN`/`DESCRIBE`/`DESC`/`ANALYZE` — the module
+  is read-only; `DELETE`/`DROP`/`UPDATE`/`INSERT`/DDL never reach the server.
+  `buildMysqlCommand` builds the remote `docker exec ... mysql ...` string;
+  `runQuery`/`runTemplate` are the reuse entry points other modules should
+  call (both enforce `assertReadOnly`).
 
 The remote SQL text always travels on the child process's **stdin**, never
 inside the command string — this is what makes single-quote injection in a
@@ -99,7 +103,7 @@ style as the `sync` module's resolvers. `conf.json` gains `ssh` (`host`,
 
 Exit codes: `0` ok, `1` zero rows with `--require-rows`, `3` ssh/mysql
 failure, `64` usage error (bad `name=value`, unknown template, missing
-config). `--print` resolves and prints the ssh argv (password redacted) and
+config, non-read-only SQL). `--print` resolves and prints the ssh argv (password redacted) and
 SQL without connecting — the `sql` module's equivalent of `sync --url`.
 
 ### Output convention (`src/output.js`)

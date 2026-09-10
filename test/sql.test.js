@@ -8,7 +8,51 @@ import {
   renderTemplate,
   buildMysqlCommand,
   parseBatchRows,
+  assertReadOnly,
 } from '../src/sql.js';
+
+test('assertReadOnly: allows SELECT / WITH / SHOW / EXPLAIN / DESCRIBE', () => {
+  for (const sql of [
+    'SELECT 1',
+    '  select id from t',
+    'WITH x AS (SELECT 1) SELECT * FROM x',
+    'SHOW TABLES',
+    'EXPLAIN SELECT 1',
+    'DESCRIBE site_tender',
+    'SELECT 1;',
+  ]) {
+    assert.equal(assertReadOnly(sql), sql);
+  }
+});
+
+test('assertReadOnly: refuses DELETE, DROP, UPDATE, INSERT, TRUNCATE, ALTER', () => {
+  for (const sql of [
+    'DELETE FROM site_tender',
+    'DROP TABLE site_tender',
+    'update t set x = 1',
+    'INSERT INTO t VALUES (1)',
+    'TRUNCATE t',
+    'ALTER TABLE t ADD c INT',
+  ]) {
+    assert.throws(() => assertReadOnly(sql), /only read-only SQL is allowed/);
+  }
+});
+
+test('assertReadOnly: refuses a write hidden after a SELECT', () => {
+  assert.throws(
+    () => assertReadOnly('SELECT 1; DROP TABLE site_tender'),
+    /only read-only SQL is allowed/,
+  );
+});
+
+test('assertReadOnly: comment cannot disguise a write verb', () => {
+  assert.throws(() => assertReadOnly('/* SELECT */ DROP TABLE t'), /read-only/);
+  assert.throws(() => assertReadOnly('-- ok\nDELETE FROM t'), /read-only/);
+});
+
+test('assertReadOnly: empty SQL throws', () => {
+  assert.throws(() => assertReadOnly('   '), /empty SQL/);
+});
 
 test('escapeSqlLiteral: quotes and escapes an apostrophe', () => {
   assert.equal(escapeSqlLiteral("O'Brien"), "'O\\'Brien'");

@@ -45,6 +45,11 @@ Runs a templated SQL query on the stage DB over SSH + `docker exec` + `mysql`.
 Host, container, credentials, and templates live in the git-ignored
 `conf.json` (`ssh`, `db`, `sqlTemplates` keys) — never in source.
 
+**Read-only.** Only `SELECT` / `WITH` / `SHOW` / `EXPLAIN` / `DESCRIBE`
+statements are accepted. `DELETE`, `DROP`, `UPDATE`, `INSERT` and every other
+write or DDL verb are refused (exit 64) before any connection is made — each
+`;`-separated statement is checked, and SQL comments can't disguise the verb.
+
 ```
 dzo sql <template> [name=value ...]
 dzo sql --query=<sql>
@@ -79,7 +84,7 @@ Note: due to non-strict flag parsing, `--query` needs the `=` form
 | 0 | Success — result printed |
 | 1 | Zero rows returned and `--require-rows` was given |
 | 3 | ssh/mysql failure |
-| 64 | Usage error |
+| 64 | Usage error (bad `name=value`, unknown template, missing config, or non-read-only SQL) |
 
 ## Help
 

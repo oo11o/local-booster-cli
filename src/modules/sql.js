@@ -1,5 +1,5 @@
 import { resolveTimeoutMs, resolveSsh, resolveDb, resolveSqlTemplate } from '../config.js';
-import { renderTemplate, buildMysqlCommand, runQuery, parseBatchRows } from '../sql.js';
+import { renderTemplate, buildMysqlCommand, runQuery, parseBatchRows, assertReadOnly } from '../sql.js';
 import { SshError } from '../ssh.js';
 import { ok, fail, info } from '../output.js';
 
@@ -28,6 +28,10 @@ Run a named SQL template (from conf.json "sqlTemplates") against the stage
 database over SSH + docker exec + mysql, or run an ad-hoc query with
 --query. Prints mysql's own table output on stdout.
 
+Read-only: only SELECT / WITH / SHOW / EXPLAIN / DESCRIBE statements are
+allowed. DELETE, DROP, UPDATE, INSERT and all other write/DDL verbs are
+refused (exit 64) before anything is sent to the server.
+
 Arguments:
   template     Template name from conf.json "sqlTemplates"
   name=value   Fills {{name}} placeholders in the template
@@ -53,7 +57,8 @@ Exit codes:
   0  success — result printed
   1  zero rows returned and --require-rows was given
   3  ssh/mysql failure
-  64 usage error`,
+  64 usage error (bad name=value, unknown template, missing config,
+      or non-read-only SQL)`,
 
   async run(positionals, flags) {
     let sql;
@@ -74,6 +79,7 @@ Exit codes:
         const params = parseParams(rest);
         sql = renderTemplate(templateSql, params);
       }
+      assertReadOnly(sql);
     } catch (err) {
       fail(err.message);
       return 64;
